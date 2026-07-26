@@ -10,7 +10,7 @@ overlay_position_bottom = true
 # so you have to set these to: display res - panel width,
 # settings for 1080p given below, with a panel width of 25px.
 width = 1920
-height = 1055
+height = 1058
 
 # loop_input = false
 
@@ -18,7 +18,7 @@ height = 1055
 scaling_mode = shrink
 
 # Pixelate images
-upscaling_method = nearest_neighbour
+# upscaling_method = nearest_neighbour
 
 # Suppress built-in key bindings, and specify them explicitly in this
 # config file.
