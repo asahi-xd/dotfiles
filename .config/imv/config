@@ -1,0 +1,123 @@
+[options]
+
+# Text to display at the corner. Shows things like image name, zoom lvl, etc.
+# overlay_font also sets the font config the the whole UI.
+overlay = true
+overlay_font = NotoSansMono-Regular:10
+overlay_position_bottom = true
+
+# Initial window size. There is no functionality to 'maximize',
+# so you have to set these to: display res - panel width,
+# settings for 1080p given below, with a panel width of 25px.
+width = 1920
+height = 1055
+
+# loop_input = false
+
+# Makes sure images show up in a sane way.
+scaling_mode = shrink
+
+# Pixelate images
+upscaling_method = nearest_neighbour
+
+# Suppress built-in key bindings, and specify them explicitly in this
+# config file.
+suppress_default_binds = true
+
+[aliases]
+# Define aliases here. Any arguments passed to an alias are appended to the
+# command.
+# alias = command to run
+delete = exec rm "$imv_current_file"; close
+
+# Launches GIMP for more advanced editing
+gimp = exec gimp -s "$imv_current_file"
+
+# It rotates 90 deg clockwise, and saves the image.
+# Needs fbida package to work for jpegs, and imagemagick for the rest.
+
+# JPEGs, Lossless
+rj90 = exec exiftran -9 -i "$imv_current_file"
+rj180 = exec exiftran -1 -i "$imv_current_file"
+rj270 = exec exiftran -2 -i "$imv_current_file"
+
+# Anything else, NOT LOSSLESS
+ri90 = exec magick convert "$imv_current_file" -rotate 90 "$imv_current_file"
+ri180 = exec magick convert "$imv_current_file" -rotate 180 "$imv_current_file"
+ri270 = exec magick convert "$imv_current_file" -rotate 270 "$imv_current_file"
+
+[binds]
+# Define some key bindings
+q = quit
+# y = exec echo working!
+
+# Image navigation
+<Left> = prev
+<Right> = next
+
+# Vim bindings
+<Shift+N> = prev
+<n> = next
+
+# <bracketleft> = prev
+# <bracketright> = next
+
+# Vim
+gg = goto 1
+<Shift+G> = goto -1
+
+# vim-like Panning
+j = pan 0 -50
+k = pan 0 50
+h = pan 50 0
+l = pan -50 0
+
+# Regular panning 
+<Up> = pan 0 50
+<Down> = pan 0 -50
+<Left> = pan 50 0
+<Right> = pan -50 0
+
+# Zooming
+<Shift+Up> = zoom 3
+<Shift+Down> = zoom -3
+
+i = zoom 1
+o = zoom -1
+
+<Shift+O> = zoom 5
+<Shift+I> = zoom -5
+
+# <Shift+plus> = zoom 1
+# <minus> = zoom -1
+
+# Rotate Clockwise by 90 degrees, without saving image.
+<Ctrl+r> = rotate by 90
+
+# Close current image
+x = close
+
+# Fit to screen
+f = scaling shrink
+
+# d = overlay
+# p = exec echo $imv_current_file
+
+# Center image
+c = center
+
+# s = scaling next
+# <Shift+S> = upscaling next
+
+# Zoom to 100%
+<Shift+F> = zoom actual
+
+# r = reset
+
+# Gif playback
+<period> = next_frame
+<space> = toggle_playing
+
+# Slideshow control
+t = slideshow +1
+<Shift+T> = slideshow -1
