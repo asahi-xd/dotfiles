@@ -8,7 +8,7 @@ overlay_position_bottom = true
 
 # Initial window size. There is no functionality to 'maximize',
 # so you have to set these to: display res - panel width,
-# settings for 1080p given below, with a panel width of 25px.
+# settings for 1080p given below, with a panel width of 22px.
 width = 1920
 height = 1058
 
