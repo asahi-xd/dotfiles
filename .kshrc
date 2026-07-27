@@ -63,14 +63,37 @@ set -o ignoreeof
 set -o noclobber
 
 # Print a literal like bash when Ctrl+C is pressed
-trap 'print "^C"' INT
+# trap 'print "^C"' INT
 
 # Enable emacs line editing mode
 set -o emacs
 
+# Reset title to 'ksh' and use a carriage return to recalculate prompt width
+if [[ $- == *i* ]]; then
+    PS1=$'\E]0;ksh\a\r'"$PS1"
+fi
 
 # Make ksh behave a lot more like Bash
 keybd_trap () {
+# 0. KITTY TAB TITLE: Catch Enter key and filter out fast commands
+  if [[ -z ${_keybd_buf} && ( ${.sh.edchar} == $'\r' || ${.sh.edchar} == $'\n' ) ]]; then
+    _cmd="${.sh.edtext}"
+    
+    # Extract just the first word (the command name)
+    _first_word="${_cmd%% *}"
+    
+    # Check if the command is in our list of fast commands, or unwanted ones
+    case "$_first_word" in
+        ls|cd|pwd|echo|cat|clear|history|bg|fg|jobs|nvim) 
+            # Do nothing. It is a fast command, so avoid the title flicker.
+            ;;
+        *)
+            # It is not on the blacklist. Update the title instantly.
+            printf "\033]0;%s\007" "$_cmd" > /dev/tty
+            ;;
+    esac
+  fi
+
   # 1. Handle single-byte control keys (Ctrl+Backspace)
   if [[ -z ${_keybd_buf} && ${.sh.edchar} == $'\x08' ]]; then
     .sh.edchar=$'\e\x7f'
@@ -123,7 +146,10 @@ keybd_trap () {
   fi
 }
 
-trap keybd_trap KEYBD
+# Only apply the trap for interactive shell sessions
+if [[ $- == *i* ]]; then
+    trap keybd_trap KEYBD
+fi
 
 # --------------------------------
 
@@ -140,3 +166,5 @@ mv() { command mv -i -v "${@}"; }
 # Aliases
 
 alias ls='ls -l -a -H --color=auto'
+
+
