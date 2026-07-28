@@ -1,170 +1,152 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-# Increased history size
-HISTSIZE=3000
-HISTFILE="${HOME}/.ksh_history"
+# set the editor
+EDITOR=nvim
 
-# Define colors using ksh93 non-printable wrappers (\001 and \002)
-# This prevents the prompt from breaking line wrapping on long commands
+# Set the shell options
+# ignoreeof only works upto 19 Ctrl+D Presses)
+set -o emacs -o notify -o globstar -o ignoreeof -o globcasedetect -o nobackslashctrl
 
-# Reset
-c_reset=$'\001\033[0m\002'
-
-# Regular Colors
-c_black=$'\001\033[0;30m\002'
-c_red=$'\001\033[0;31m\002'
-c_green=$'\001\033[0;32m\002'
-c_yellow=$'\001\033[0;33m\002'
-c_blue=$'\001\033[0;34m\002'
-c_purple=$'\001\033[0;35m\002'
-c_cyan=$'\001\033[0;36m\002'
-c_white=$'\001\033[0;37m\002'
-
-# Bold Colors
-c_bblack=$'\001\033[1;30m\002'
-c_bred=$'\001\033[1;31m\002'
-c_bgreen=$'\001\033[1;32m\002'
-c_byellow=$'\001\033[1;33m\002'
-c_bblue=$'\001\033[1;34m\002'
-c_bpurple=$'\001\033[1;35m\002'
-c_bcyan=$'\001\033[1;36m\002'
-c_bwhite=$'\001\033[1;37m\002'
-
-# Background Colors (if needed)
-c_bg_black=$'\001\033[40m\002'
-c_bg_red=$'\001\033[41m\002'
-c_bg_green=$'\001\033[42m\002'
-c_bg_yellow=$'\001\033[43m\002'
-c_bg_blue=$'\001\033[44m\002'
-c_bg_purple=$'\001\033[45m\002'
-c_bg_cyan=$'\001\033[46m\002'
-c_bg_white=$'\001\033[47m\002'
-
-# Retrieve short hostname
-HOST=$(hostname -s 2>/dev/null || uname -n)
-
-# PS1 variable
-# We escape dynamic variables like $PWD so they evaluate every time the prompt is drawn
-if [[ $(id -u) == 0 ]] ; then
-    PS1="${c_bred}${HOST}${c_bblue} \${PWD##*/} # ${c_reset}"
-else
-    PS1="${c_bgreen}\${USER}@${HOST}${c_bblue} \${PWD} $ ${c_reset}"
-fi
-
-
-# Disable Ctrl+D exit (Only works upto 19 Ctrl+D Presses)
-set -o ignoreeof
-
+# noclobber
 # Do not overwrite files when redirecting output by default.
 # To manually overwrite a file while noclobber is set:
 # echo "output" >| file.txt
-#
-set -o noclobber
+set -C
 
-# Print a literal like bash when Ctrl+C is pressed
-# trap 'print "^C"' INT
+# Get the effective user ID now to avoid running id(1) every time $PS1 is printed
+integer euid=$(id -u)
 
-# Enable emacs line editing mode
-set -o emacs
+# get some more stuff now
+HOST="$(uname -n)"
 
-# Reset title to 'ksh' and use a carriage return to recalculate prompt width
-if [[ $- == *i* ]]; then
-    PS1=$'\E]0;ksh\a\r'"$PS1"
-fi
+# Specify search path for autoloadable functions
+FPATH=/usr/share/ksh/functions:~/.func
 
-# Make ksh behave a lot more like Bash
-keybd_trap () {
-# 0. KITTY TAB TITLE: Catch Enter key and filter out fast commands
-  if [[ -z ${_keybd_buf} && ( ${.sh.edchar} == $'\r' || ${.sh.edchar} == $'\n' ) ]]; then
-    _cmd="${.sh.edtext}"
-    
-    # Extract just the first word (the command name)
-    _first_word="${_cmd%% *}"
-    
-    # Check if the command is in our list of fast commands, or unwanted ones
-    case "$_first_word" in
-        ls|cd|pwd|echo|cat|clear|history|bg|fg|jobs|nvim) 
-            # Do nothing. It is a fast command, so avoid the title flicker.
-            ;;
-        *)
-            # It is not on the blacklist. Update the title instantly.
-            printf "\033]0;%s\007" "$_cmd" > /dev/tty
-            ;;
-    esac
-  fi
+# Optional: Autoload functions installed with ksh
+autoload autocd cd dirs man mcd popd pushd
 
-  # 1. Handle single-byte control keys (Ctrl+Backspace)
-  if [[ -z ${_keybd_buf} && ${.sh.edchar} == $'\x08' ]]; then
-    .sh.edchar=$'\e\x7f'
-    return
-  fi
+# Optional: Set the precision of the time keyword to six and use %C
+TIMEFORMAT=$'\nreal\t%6lR\ncpu\t%6lC'
 
-  # 2. State Machine: Catch sequences starting with Escape or continue building
-  if [[ ${.sh.edchar} == $'\e'* || -n ${_keybd_buf} ]]; then
-    _keybd_buf+=${.sh.edchar}
-    
-    # If the buffer is exactly ESC, wait for the next character
-    if [[ ${_keybd_buf} == $'\e' ]]; then
-      .sh.edchar=''
-      return
-    fi
+# Optional: Avoid certain file types in completion
+FIGNORE='@(*.o|~*)'
 
-    # If it's ESC followed by anything other than '[' or 'O', it's not a control sequence
-    # (e.g., standard Alt+B or Escape pressed manually). Release it immediately.
-    if [[ ${_keybd_buf} == $'\e'[!\[O]* ]]; then
-      .sh.edchar=${_keybd_buf}
-      _keybd_buf=''
-      return
-    fi
-
-    # If we are here, we are building an ESC [ or ESC O terminal sequence.
-    # Terminal sequences always terminate with an alphabetical letter or a tilde.
-    if [[ ${_keybd_buf} == *[a-zA-Z~] ]]; then
-      case ${_keybd_buf} in
-        $'\e[1;5D') .sh.edchar=$'\eb' ;; # Ctrl+Left -> Alt+B
-        $'\e[1;5C') .sh.edchar=$'\ef' ;; # Ctrl+Right -> Alt+F
-        $'\e[3;5~') .sh.edchar=$'\ed' ;; # Ctrl+Delete -> Alt+D
-        $'\e[1;5A' | $'\e[1;5B') .sh.edchar='' ;; # Discard Ctrl+Up/Down
-        $'\e[3~')   # Delete key with EOF protection
-          if (( .sh.edcol < ${#.sh.edtext} )); then
-            .sh.edchar=$'\004'
-          else
-            .sh.edchar=''
-          fi
-          ;;
-        *) 
-          # Unrecognized terminal sequence. Pass it through safely.
-          .sh.edchar=${_keybd_buf} 
-          ;;
-      esac
-      _keybd_buf='' # Reset buffer
-    else
-      # Incomplete sequence: swallow the current chunk and wait for the rest
-      .sh.edchar=''
-    fi
-  fi
-}
-
-# Only apply the trap for interactive shell sessions
-if [[ $- == *i* ]]; then
-    trap keybd_trap KEYBD
-fi
-
-# --------------------------------
-
-# User specific parts start here
-
-# Commands to run after starting shell
-fastfetch
+# Save more commands in history
+HISTSIZE=2000
+HISTEDIT=$EDITOR
 
 # Wrap the following commands for interactive use to avoid accidental file overwrites.
 rm() { command rm -i -v "${@}"; }
 cp() { command cp -i -v "${@}"; }
 mv() { command mv -i -v "${@}"; }
 
+mp() {
+    typeset dir=${2%/*}
+    [[ $dir == "$2" ]] && dir=.
+    mkdir -p "$dir" && cp "$1" "$2"
+}
+
+# Remove the problematic default 'r' alias (this is only
+# done when it's safe, as old versions of ksh can crash
+# after 'unalias r').
+((.sh.version >= 20220806)) && unalias r
+
+# Below is a basic example that provides extra tilde expansions
+if ((.sh.version >= 20210318)) && ((euid != 0)); then
+    .sh.tilde.get()
+    {
+        case ${.sh.tilde} in
+        '~docs')   .sh.tilde=~/Documents ;;
+        '~dls')    .sh.tilde=~/Downloads ;;
+        '~share')  .sh.tilde=~/.local/share ;;
+        esac
+    }
+fi
+
+# Associative array containing a set of RGB color codes.
+# Terminals emulators with support for wide color ranges
+# can take better advantage of this.
+typeset -A color=(
+    [bright_lavender]=$'\E[38;2;191;148;228m'
+    [red]=$'\E[38;2;255;0;0m'
+    [cyan_process]=$'\E[38;2;0;183;235m'
+    [ultramarine_blue]=$'\E[38;2;65;102;245m'
+    [emerald_green]=$'\E[38;2;16;185;129m'
+    [mint_fresh]=$'\E[38;2;110;231;183m'
+    [deep_purple]=$'\E[38;2;109;40;217m'
+    [hot_pink]=$'\E[38;2;236;72;153m'
+    [coral_sunset]=$'\E[38;2;255;127;80m'
+    [golden_yellow]=$'\E[38;2;255;193;7m'
+    [slate_gray]=$'\E[38;2;112;128;144m'
+    [charcoal]=$'\E[38;2;54;54;54m'
+    [lime_bright]=$'\E[38;2;50;205;50m'
+    [ocean_blue]=$'\E[38;2;0;105;148m'
+    [rose_pink]=$'\E[38;2;255;105;180m'
+    [teal_dark]=$'\E[38;2;0;102;102m'
+    [peach]=$'\E[38;2;255;183;97m'
+    [violet_deep]=$'\E[38;2;138;43;226m'
+    [sage_green]=$'\E[38;2;157;175;144m'
+    [orange_vibrant]=$'\E[38;2;255;140;0m'
+    [indigo]=$'\E[38;2;75;0;130m'
+    [reset]=$'\E[0m'
+    # Some extra examples
+    [start_title]=$'\E]0;'
+    [bell]=$'\a'
+    [underline]=$'\E[4m'
+    [spaced_dots]=$'\E[4:5m'
+)
+
+PS1.get()
+{
+    ret=$?  # Workaround $? bug in ksh < 2021-03-16 (cf. https://github.com/ksh93/ksh/pull/226)
+
+    pwd=$(pwd 2>/dev/null)
+    case ${pwd} in
+        ~)      pwd='~' ;;
+        ~/*)    pwd="~${pwd#~}" ;;
+        '')     pwd="${color[red]}No pwd found" ;;
+        / | * ) ;;  # Do nothing
+    esac
+    if ((euid == 0)); then
+        .sh.value='$USER@$HOST ${color[bright_lavender]}${pwd} ${color[red]}#${color[reset]} '
+    else
+        .sh.value='${color[start_title]}$pwd${color[bell]}${color[rose_pink]}$USER${color[reset]}@${color[peach]}$HOST ${color[coral_sunset]}${pwd} ${color[cyan_process]}\$${color[reset]} '
+    fi
+
+    return $ret
+}
+# commands to skip setting terminal title for.
+# these either finish too fast, or can be made to set the title themselves (eg: nvim)
+typeset -A skip=(
+    [case]=1 [fastfetch]=1 [neofetch]=1 [printf]=1 [print]=1
+    [ls]=1   [cd]=1    [pwd]=1  [cat]=1 [lsblk]=1
+    [grep]=1 [echo]=1  [mkdir]=1 [rm]=1
+    [cp]=1   [mv]=1    [pushd]=1 [popd]=1
+    [dir]=1  [dirs]=1  [nvim]=1 [clear]=1
+    [chmod]=1 [chown]=1 [jobs]=1 [bg]=1 [fg]=1
+)
+
+# Logic to set the terminal title.
+# Relevant for kitty or any terminal that does not do it for ksh93.
+trap '
+    cmd=${.sh.command%% *}
+    cmd=${cmd##*/}
+
+    if [[ -n ${skip[$cmd]} ]]; then
+        :
+    else
+        printf "${color[start_title]}%s${color[bell]}" "$cmd"
+    fi
+' DEBUG
+
+
+
+# User specific part starts here
+
+# Command(s) to run after starting shell
+fastfetch
+
 # Aliases
-
 alias ls='ls -l -a -H --color=auto'
-
 
