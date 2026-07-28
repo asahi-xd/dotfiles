@@ -5,7 +5,7 @@
 EDITOR=nvim
 
 # Set the shell options
-# ignoreeof only works upto 19 Ctrl+D Presses)
+# ignoreeof only works upto 19 Ctrl+D Presses
 set -o emacs -o notify -o globstar -o ignoreeof -o globcasedetect -o nobackslashctrl
 
 # noclobber
@@ -125,6 +125,7 @@ typeset -A skip=(
     [cp]=1   [mv]=1    [pushd]=1 [popd]=1
     [dir]=1  [dirs]=1  [nvim]=1 [clear]=1
     [chmod]=1 [chown]=1 [jobs]=1 [bg]=1 [fg]=1
+    [autocd]=1
 )
 
 # Logic to set the terminal title.
@@ -141,12 +142,108 @@ trap '
 ' DEBUG
 
 
-
 # User specific part starts here
 
 # Command(s) to run after starting shell
 fastfetch
 
 # Aliases
-alias ls='ls -l -a -H --color=auto'
+alias ls="ls -l -a -H --color=auto"
+alias dir="ls -l -a --color=auto"
+alias df="df -h"
+alias du="du -h"
+alias aria2="aria2c"
+alias findchar="grep --color=auto -rn"
+alias speedtest="speedtest --secure --share --simple"
+alias sudo="sudo"
+alias traceroute='tracepath'
+alias netcat='ncat'
+alias cat='cat -v'
+alias ip='ip -color=auto'
+alias grep='grep --color=auto'
+alias neofetch='fastfetch'
+alias vimdiff="nvim -d"
 
+# Needs 7z
+alias crc32sum="7z h -scrcCRC32"
+alias crc64sum="7z h -scrcCRC64"
+alias xxh64sum="7z h -scrcXXH64"
+
+alias nvtop='nvtop --encode-hide=-1'
+alias vim="nvim"
+alias cls="clear"
+
+# Arch specific
+# alias pkg-audit="arch-audit --show-cve --color always --recursive"
+
+alias ffmpeg="ffmpeg -hide_banner -loglevel error"
+alias dmesg="dmesg --human -T -e --color=always"
+alias less="nvimpager -p"
+alias memstat="free --human --si --total --wide"
+alias zswapstat="grep -r . /sys/kernel/debug/zswap/"
+
+
+# Functions
+
+netstat(){
+    case "$1" in
+        "-r")
+            ip route "${@:2}"
+            ;;
+        "-i")
+            ip -s link "${@:2}"
+            ;;
+        "-g")
+            ip maddr "${@:2}"
+            ;;
+        *)
+            ss "$@"
+            ;;
+    esac
+}
+
+untar(){
+    tar -xvpf "$@" --one-top-level
+}
+
+watch(){
+    command watch -n 2 "$@"
+}
+
+# starts a program without it taking up the terminal
+start(){
+    "$@" > /dev/null 2>&1 & disown
+}
+
+weather() {
+    curl "wttr.in/$1"
+}
+
+distrobox(){
+    case "$1" in
+        "enter")
+            command distrobox enter --clean-path --no-workdir "${@:2}"
+            ;;
+        *)
+            command distrobox "$@"
+            ;;
+    esac
+
+}
+
+podman(){
+    case $1 in
+        "history")
+            command podman history --no-trunc "${@:2}"
+            ;;
+        *)
+            command podman "$@"
+            ;;
+    esac
+}
+
+# info about an ip address
+ipinfo() {
+    curl ipinfo.io/"$1"
+    echo ""
+}
