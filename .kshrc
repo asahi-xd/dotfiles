@@ -155,7 +155,7 @@ alias du="du -h"
 alias aria2="aria2c"
 alias findchar="grep --color=auto -rn"
 alias speedtest="speedtest --secure --share --simple"
-alias sudo="sudo"
+alias sudo="sudo "
 alias traceroute='tracepath'
 alias netcat='ncat'
 alias cat='cat -v'
