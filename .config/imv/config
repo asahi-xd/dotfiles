@@ -51,6 +51,11 @@ ri270 = exec magick convert "$imv_current_file" -rotate 270 "$imv_current_file"
 q = quit
 # y = exec echo working!
 
+<F11>= fullscreen
+
+# copy image to clipboard
+yy = exec echo file://"$imv_current_file" | wl-copy -t text/uri-list
+
 # Image navigation
 <Left> = prev
 <Right> = next
@@ -78,18 +83,21 @@ l = pan -50 0
 <Left> = pan 50 0
 <Right> = pan -50 0
 
-# Zooming
+
+# shift-arrow modifiers
 <Shift+Up> = zoom 3
 <Shift+Down> = zoom -3
 
+<Shift+Left> = prev
+<Shift+Right> = next
+
+# regular zooming function
 i = zoom 1
 o = zoom -1
 
+# faster zoom
 <Shift+O> = zoom 5
 <Shift+I> = zoom -5
-
-# <Shift+plus> = zoom 1
-# <minus> = zoom -1
 
 # Rotate Clockwise by 90 degrees, without saving image.
 <Ctrl+r> = rotate by 90
@@ -100,14 +108,20 @@ x = close
 # Fit to screen
 f = scaling shrink
 
-# d = overlay
-# p = exec echo $imv_current_file
+# show or hide the overlay
+d = overlay
+
+# print path to current file on stdout
+p = exec echo $imv_current_file
 
 # Center image
 c = center
 
-# s = scaling next
-# <Shift+S> = upscaling next
+# cycle through scaling modes
+s = scaling next
+
+# switch between the two upscaling modes
+<Shift+S> = upscaling next
 
 # Zoom to 100%
 <Shift+F> = zoom actual
